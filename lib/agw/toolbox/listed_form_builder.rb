@@ -207,7 +207,23 @@ module AGW #:nodoc:
             @template.content_tag(:span, value, :class => 'value'),
             :class => 'plain')
         end
-    
+
+        # Output a list item with faux labels and form element, but with a
+        # hidden form element. This way values appear saved and uneditable,
+        # but in a sexier way than using disabled controls.
+        #
+        # Example:
+        #
+        #   f.faux_row(:login)
+        #
+        # Will output:
+        #
+        #   <li class="plain">
+        #     <input type="hidden" name="user[login]" value="Andy" />
+        #     <span class="label">Login</span>
+        #     <span class="value">Andy</span>
+        #   </li>
+        #
         def faux_row(attribute, options = {})
           options.reverse_merge! :label => attribute.to_s.humanize
           @template.content_tag(:li, 
@@ -320,7 +336,7 @@ module AGW #:nodoc:
           #   klass # => 'with_error'
           #   error_desription # => "<div class="with_error">can't be blank</div>"
           def collect_errors_for(label)
-            errors = @object.errors.on(label)
+            errors = @object.nil? ? nil : @object.errors.on(label)
             case errors
             when nil:   return [nil, '']
             when Array: return formatted_errors(errors.to_sentence(:connector => 'en'))
@@ -429,7 +445,7 @@ module AGW #:nodoc:
       # Override the default <tt>error_messages_for</tt> method to
       # only display errors on base. However, a header text
       # is always displayed with the total number of errors.
-      def aerror_messages_for(*params)
+      def error_messages_for(*params)
         options = params.extract_options!.symbolize_keys
         if object = options.delete(:object)
           objects = [object].flatten
