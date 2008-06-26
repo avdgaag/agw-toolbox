@@ -6,11 +6,9 @@ module AGW #:nodoc:
         Time::DATE_FORMATS[:short]     = "%d-%m-%y %H:%M"
         Time::DATE_FORMATS[:tiny_date] = "%d %b"
         Time::DATE_FORMATS[:code]      = '%d%m%y%H%M'
-
-        ::ActiveRecord::Base.send :include, ActiveRecord
       end
       
-      module ActiveRecord #:nodoc:
+      module ::ActiveRecord #:nodoc:
         class Errors
           begin
           @@default_error_messages = {
