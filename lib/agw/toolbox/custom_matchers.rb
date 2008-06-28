@@ -149,15 +149,17 @@ module AGW #:nodoc:
           @old_value = @object[@attribute]
     
           # determine a new value
-          @new_value ||= case @old_value
-            when nil: '100'
-            when String: "a#{@old_value}"
-            when Integer: @old_value + 1
-            when Time: @old_value - 10
-            when true: false
-            when false: true
-            else
-              nil
+          if @new_value.nil? || @new_value = @old_value
+            @new_value = case @old_value
+              when nil: '100'
+              when String: "a#{@old_value}"
+              when Integer: @old_value + 1
+              when Time: @old_value - 60*60*24*7
+              when true: false
+              when false: true
+              else
+                nil
+            end
           end
           raise "Could not determine a suitable replacement value for #{@old_value} with #{@attribute}" if @old_value == @new_value
     
@@ -171,6 +173,7 @@ module AGW #:nodoc:
         # provide a value to test against
         def with(new_value)
           @new_value = new_value
+          self
         end
 
         def failure_message

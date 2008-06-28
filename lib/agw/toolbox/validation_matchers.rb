@@ -187,6 +187,129 @@ module AGW #:nodoc:
       def require_inclusion_of(attribute)
         RequireInclusionOf.new(attribute)
       end
+
+      class RequireFormatOf
+        def initialize(attribute)
+          @attribute = attribute
+          @acceptable = []
+          @rejectable = []
+          @misses     = []
+          @success    = true
+        end
+
+        def matches?(object)
+          @object = object
+          
+          raise ArgumentError, 'need at least an acceptable or rejectable value' unless @acceptable.any? || @rejectable.any?
+          
+          try_values(@acceptable) do |value, error|
+            fail! "#{@attribute} should accept #{value}" if error
+          end
+          
+          try_values(@rejectable) do |value, error|
+            if error
+              unless correct_message_for(error)
+                fail! "Expected error message to be #{@message}, but was #{@object.errors.on(@attribute)}"
+              end
+            else
+              fail! "#{@attribute} should not accept #{value}"
+            end
+          end
+          return @success
+        end
+        
+        # Add a value that should be accepted
+        def to_accept(value)
+          only_with_a_string(value) { |value| @acceptable.push(value) }
+        end
+        alias_method :but_accept, :to_accept
+        alias_method :and_accept, :to_accept
+        
+        # Add a value that should be rejected
+        def to_reject(value)
+          only_with_a_string(value) { |value| @rejectable.push(value) }
+        end
+        alias_method :and_reject, :to_reject
+        alias_method :but_reject, :to_reject
+        
+        # Set the error message to test for
+        def with(message)
+          only_with_a_string(value) { |value| @message = message }
+        end
+
+        def failure_message
+          "expected #{@object} to require format of #{@attribute.inspect}, but it didn't: #{@misses.to_yaml}"
+        end
+
+        def negative_failure_message
+          "expected #{@object} not to require format of #{@attribute.inspect}, but it did: #{@misses.to_yaml}"
+        end
+        
+        private
+        
+          # Make sure the passed in argument is a string. Raise an
+          # arugment error if it is not. Yields the value and
+          # returns self.
+          def only_with_a_string(value)
+            if value.is_a?(String)
+              yield(value)
+              return self
+            else
+              raise ArgumentError, 'only string values are accepted'
+            end
+          end
+          
+          # Try a series of values on our object for the given attribute
+          # and yield the value and any errors on the attribute after validation          
+          def try_values(values)
+            values.each do |v|
+              @object.send("#{@attribute}=", v)    # try to set the value
+              @object.valid?
+              yield(v, @object.errors.on(@attribute))
+            end
+          end
+          
+          # Let the match fail and register why it fails
+          def fail!(msg = nil)
+            @success = false
+            @misses.push msg unless msg.nil?
+          end
+        
+          # Check if the object has the right error message
+          def correct_message_for(error)
+            return true if @message.blank? || error.nil?
+            
+            if error.is_a?(String)
+              return error == @message
+            elsif error.is_a?(Array)
+              return error.include?(@message)
+            end
+          end
+      end
+
+      # Test the format requirements of an AR model. This matcher lets
+      # you specify values to test for acceptance or rejectment.
+      #
+      # Usage example:
+      #
+      #   @user.should require_format_of(:email).
+      #     to_accept('mickey+stuff@mouse.com').
+      #     but_reject('mickey**$@disney')
+      #
+      # All values will be tested and the failure message will tell you
+      # where the matching went wrong.
+      #
+      # You can also test for the correct error message if you want to:
+      #
+      #   @user.should require_format_of(:url).
+      #     to_reject('htt:/example.com').
+      #     with('is not a valid URL')
+      # 
+      # You can chain multiple calls to reject or accept values. They both
+      # come in `to_`, `but_` and `and_` forms.
+      def require_format_of(attribute)
+        RequireFormatOf.new(attribute)
+      end
     end
   end
 end

@@ -353,7 +353,7 @@ module AGW #:nodoc:
           # Write a line to the template. Shortcut method to output plain text to the template.
           # A line end is appended to the end of the string passed in.
           def write(line, &proc)
-            @template.concat("#{line}\n", proc.binding)
+            @template.concat("#{line}\n")
           end
   
           # Given an array of arguments for a field function this method
